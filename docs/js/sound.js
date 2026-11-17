@@ -119,24 +119,71 @@ const Sound = (() => {
     return audio;
   }
 
+  // ---------- النطق الآلي ----------
+  const synth = window.speechSynthesis || null;
+  let voices = [];
+
+  function loadVoices() {
+    if (synth) voices = synth.getVoices() || [];
+  }
+  if (synth) {
+    loadVoices();
+    // أندرويد يحمّل الأصوات متأخراً
+    if (synth.addEventListener) synth.addEventListener('voiceschanged', loadVoices);
+    else synth.onvoiceschanged = loadVoices;
+  }
+
+  function ttsLang() {
+    return I18N.lang === 'ar' ? 'ar-SA' : 'en-US';
+  }
+
+  // اختيار صوت مناسب للغة صراحةً (بدونه بعض الأجهزة تسكت)
+  function pickVoice(lang) {
+    if (!voices.length) loadVoices();
+    const norm = s => (s || '').replace('_', '-').toLowerCase();
+    const want = norm(lang);
+    const prefix = want.slice(0, 2);
+    return voices.find(v => norm(v.lang) === want)
+      || voices.find(v => norm(v.lang).startsWith(prefix))
+      || null;
+  }
+
+  // معلومات للتشخيص في وضع الوالدين
+  function ttsInfo() {
+    loadVoices();
+    return { supported: !!synth, total: voices.length, voice: pickVoice(ttsLang()) };
+  }
+
   // نطق النص آلياً إذا ما فيه تسجيل
   function speak(text, onEnd) {
     stop();
-    stopSpeak();
     const done = () => { if (onEnd) { const f = onEnd; onEnd = null; f(); } };
-    if (!('speechSynthesis' in window)) { setTimeout(done, 600); return; }
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = I18N.lang === 'ar' ? 'ar-SA' : 'en-US';
-    u.rate = 0.85;
-    u.pitch = 1.2;
-    u.onend = done;
-    u.onerror = done;
-    speechSynthesis.speak(u);
+    if (!synth) { setTimeout(done, 600); return; }
+
+    // في Chrome: النطق مباشرة بعد cancel أحياناً يُتجاهل، فننتظر قليلاً
+    const busy = synth.speaking || synth.pending;
+    if (busy) synth.cancel();
+
+    setTimeout(() => {
+      const lang = ttsLang();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang;
+      const v = pickVoice(lang);
+      if (v) u.voice = v;
+      u.rate = 0.85;
+      u.pitch = 1.2;
+      u.volume = 1;
+      u.onend = done;
+      u.onerror = done;
+      try { synth.resume(); } catch (e) {}
+      synth.speak(u);
+    }, busy ? 150 : 0);
+
     setTimeout(done, 5000); // احتياط إذا ما وصل حدث الانتهاء
   }
 
   function stopSpeak() {
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (synth && (synth.speaking || synth.pending)) synth.cancel();
   }
 
   function stopAll() {
@@ -144,5 +191,5 @@ const Sound = (() => {
     stopSpeak();
   }
 
-  return { boing, pop, balloonPop, whoosh, note, cheer, playBlob, speak, stop, stopSpeak, stopAll };
+  return { boing, pop, balloonPop, whoosh, note, cheer, playBlob, speak, ttsInfo, stop, stopSpeak, stopAll };
 })();

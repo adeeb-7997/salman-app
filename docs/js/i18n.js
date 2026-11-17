@@ -45,7 +45,13 @@ const I18N = (() => {
       colorsTitle: 'أصوات الألوان',
       colorsHint: 'سجّل اسم كل لون بصوتك (حتى 4 ثوانٍ). إذا ما سجّلت، الجوال ينطقه آلياً.',
       autoVoice: 'صوت آلي',
-      resetVoice: 'رجوع للصوت الآلي'
+      resetVoice: 'رجوع للصوت الآلي',
+      ttsTitle: 'الصوت الآلي',
+      ttsTest: '🔊 اختبار الصوت الآلي',
+      ttsSample: 'أحمر',
+      ttsNo: '❌ المتصفح لا يدعم النطق الآلي',
+      ttsNoLang: '⚠️ لا يوجد صوت عربي مثبّت في الجهاز ({n} أصوات متاحة)',
+      ttsOk: '✅ الصوت المستخدم: {name}'
     },
     en: {
       appTitle: "Salman's Games",
@@ -91,7 +97,13 @@ const I18N = (() => {
       colorsTitle: 'Color voices',
       colorsHint: 'Record each color name in your voice (up to 4 seconds). Otherwise the phone says it automatically.',
       autoVoice: 'Auto voice',
-      resetVoice: 'Back to auto voice'
+      resetVoice: 'Back to auto voice',
+      ttsTitle: 'Auto voice',
+      ttsTest: '🔊 Test auto voice',
+      ttsSample: 'Red',
+      ttsNo: '❌ This browser does not support speech',
+      ttsNoLang: '⚠️ No English voice installed ({n} voices available)',
+      ttsOk: '✅ Voice in use: {name}'
     }
   };
 

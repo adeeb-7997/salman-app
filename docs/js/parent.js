@@ -284,6 +284,17 @@ const Parent = (() => {
     }
   }
 
+  // ---------- اختبار الصوت الآلي ----------
+  function testTts() {
+    const info = Sound.ttsInfo();
+    let msg;
+    if (!info.supported) msg = t('ttsNo');
+    else if (!info.voice) msg = t('ttsNoLang', { n: info.total });
+    else msg = t('ttsOk', { name: info.voice.name + ' (' + info.voice.lang + ')' });
+    $('ttsStatus').textContent = msg;
+    if (info.supported) Sound.speak(t('ttsSample'));
+  }
+
   function init() {
     // قفل الوالدين: ضغطة مطولة 3 ثوانٍ
     App.hold($('lockBtn'), 3000, open, () => App.toast(t('holdToOpen')));
@@ -295,6 +306,7 @@ const Parent = (() => {
     $('pPhoto').addEventListener('change', onPhotoChange);
     $('recBtn').addEventListener('click', togglePersonRec);
     $('playBtn').addEventListener('click', () => Sound.playBlob(voiceBlob));
+    $('ttsTestBtn').addEventListener('click', testTts);
     $('langSelect').addEventListener('change', e => {
       I18N.setLang(e.target.value);
       renderList();
