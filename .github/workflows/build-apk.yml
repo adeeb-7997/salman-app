@@ -23,8 +23,10 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: تجهيز Android SDK
-        uses: android-actions/setup-android@v3
+      - name: فحص Android SDK (موجود مسبقاً في GitHub)
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME/platforms" || true
 
       - name: تثبيت الحزم
         run: npm install
