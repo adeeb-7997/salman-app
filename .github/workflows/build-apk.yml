@@ -1,0 +1,75 @@
+name: بناء APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: تنزيل الكود
+        uses: actions/checkout@v4
+
+      - name: تجهيز Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: تجهيز Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: تجهيز Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: تثبيت الحزم
+        run: npm install
+
+      - name: نسخ مكتبة Capacitor للتطبيق
+        run: cp node_modules/@capacitor/core/dist/capacitor.js docs/capacitor.js
+
+      - name: مفتاح التوقيع الثابت
+        env:
+          KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            mkdir -p ~/.android
+            echo "$KEYSTORE_B64" | base64 -d > ~/.android/salman.keystore
+            echo "✅ مفتاح ثابت"
+          else
+            echo "::warning::لا يوجد DEBUG_KEYSTORE_BASE64 في Secrets — كل نسخة بتحتاج حذف القديمة قبل التثبيت"
+          fi
+
+      - name: إنشاء مشروع أندرويد
+        run: npx cap add android
+
+      - name: تعديلات أندرويد
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: bash scripts/patch-android.sh
+
+      - name: الأيقونة وشاشة البداية
+        run: npx capacitor-assets generate --android
+
+      - name: مزامنة الملفات
+        run: npx cap sync android
+
+      - name: بناء APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: تسمية الملف
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk salman-games-${{ github.run_number }}.apk
+
+      - name: رفع الملف
+        uses: actions/upload-artifact@v4
+        with:
+          name: salman-games-apk
+          path: salman-games-*.apk
+          retention-days: 30
