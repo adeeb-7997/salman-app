@@ -25,10 +25,27 @@ body {
   touch-action: manipulation;
 }
 input, select { font: inherit; -webkit-user-select: text; user-select: text; }
+img { -webkit-user-drag: none; }
 
 /* ===== الشاشات ===== */
 .screen { display: none; min-height: 100dvh; }
 .screen.active { display: flex; flex-direction: column; }
+
+/* ===== زر الضغط المطول (القفل / الخروج) ===== */
+.hold-btn {
+  --hold: 3000ms;
+  position: relative; width: 48px; height: 48px; padding: 0;
+  border: none; border-radius: 50%;
+  background: rgba(0,0,0,.07); font-size: 20px; opacity: .55;
+  touch-action: none;
+}
+.hold-btn .ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); pointer-events: none; }
+.hold-btn circle {
+  fill: none; stroke: var(--primary); stroke-width: 4;
+  stroke-dasharray: 126; stroke-dashoffset: 126;
+}
+.hold-btn.holding { opacity: 1; }
+.hold-btn.holding circle { transition: stroke-dashoffset var(--hold) linear; stroke-dashoffset: 0; }
 
 /* ===== الرئيسية ===== */
 #home {
@@ -39,19 +56,6 @@ input, select { font: inherit; -webkit-user-select: text; user-select: text; }
   margin-bottom: 14px;
 }
 .home-header h1 { margin: 0; font-size: 1.6rem; font-weight: 800; }
-
-.lock-btn {
-  position: relative; width: 44px; height: 44px; padding: 0;
-  border: none; border-radius: 50%;
-  background: rgba(0,0,0,.06); font-size: 18px; opacity: .55;
-}
-.lock-btn .ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.lock-btn circle {
-  fill: none; stroke: var(--primary); stroke-width: 4;
-  stroke-dasharray: 126; stroke-dashoffset: 126;
-}
-.lock-btn.holding { opacity: 1; }
-.lock-btn.holding circle { transition: stroke-dashoffset 3s linear; stroke-dashoffset: 0; }
 
 .tiles {
   flex: 1; display: grid; gap: 16px;
@@ -83,6 +87,103 @@ input, select { font: inherit; -webkit-user-select: text; user-select: text; }
 @keyframes bounce {
   0% { transform: scale(1); } 30% { transform: scale(1.08); }
   60% { transform: scale(.96); } 100% { transform: scale(1); }
+}
+
+/* ===== شاشات الألعاب (مشترك) ===== */
+.game {
+  position: relative; overflow: hidden;
+  align-items: center; justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.game .home-btn {
+  position: absolute; z-index: 5;
+  top: max(12px, env(safe-area-inset-top)); inset-inline-start: 12px;
+  background: rgba(255,255,255,.65);
+}
+.empty-game { text-align: center; padding: 24px; }
+.empty-game .big { font-size: 90px; display: block; }
+.empty-game p { font-size: 1.2rem; font-weight: 700; }
+
+/* ===== مين هذا؟ ===== */
+#game-who.active { background: radial-gradient(circle at 50% 40%, #FFF3E0, #FFCC80); }
+.who-stage {
+  flex: 1; width: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+}
+.who-card {
+  width: min(78vw, 60vh); aspect-ratio: 1;
+  border-radius: 50%; overflow: hidden; background: #fff;
+  border: 10px solid #fff; box-shadow: 0 12px 0 rgba(0,0,0,.12);
+}
+.who-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.who-name { font-size: 2.2rem; font-weight: 800; color: #5D4037; min-height: 1.3em; }
+.who-card.enter { animation: whoIn .55s ease-out; }
+.who-card.talk  { animation: talk .6s ease-in-out infinite; }
+@keyframes whoIn {
+  from { transform: scale(.3) rotate(-15deg); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+@keyframes talk { 50% { transform: scale(1.06) rotate(2deg); } }
+
+/* ===== الغميضة ===== */
+#game-peek.active { background: linear-gradient(#B3E5FC 0%, #E1F5FE 72%, #A5D6A7 72%); }
+.house {
+  width: min(92vw, 520px, 80vh);
+  display: flex; flex-direction: column; align-items: center;
+}
+.roof {
+  width: 100%; height: 80px; background: #E57373;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.walls {
+  width: 90%; background: #FFF3E0; padding: 16px 16px 0;
+  border-radius: 0 0 14px 14px; box-shadow: 0 8px 0 rgba(0,0,0,.08);
+}
+.windows {
+  --cols: 2;
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(var(--cols), 1fr);
+}
+.door {
+  width: 24%; height: 64px; margin: 14px auto 0;
+  background: #8D6E63; border-radius: 40px 40px 0 0;
+}
+.window {
+  --c: #4FC3F7;
+  position: relative; aspect-ratio: 1; overflow: hidden;
+  border-radius: 12px; border: 6px solid #8D6E63; background: #FFFDE7;
+  perspective: 600px;
+}
+.window img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transform: scale(.5); transition: transform .45s cubic-bezier(.3, 1.6, .5, 1);
+}
+.window.open img { transform: scale(1); }
+.shutter {
+  position: absolute; top: 0; bottom: 0; width: 50%; z-index: 2;
+  background: repeating-linear-gradient(0deg, var(--c) 0 12px, rgba(0,0,0,.12) 12px 15px), var(--c);
+  transition: transform .5s ease;
+}
+.shutter.l { left: 0;  transform-origin: left center; }
+.shutter.r { right: 0; transform-origin: right center; }
+.window.open .shutter.l { transform: rotateY(-110deg); }
+.window.open .shutter.r { transform: rotateY(110deg); }
+.window.wiggle { animation: wiggle .4s; }
+@keyframes wiggle {
+  25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); }
+}
+
+/* ===== نجوم الاحتفال ===== */
+.burst {
+  position: fixed; z-index: 40; font-size: 30px; pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: burst .9s ease-out forwards;
+}
+@keyframes burst {
+  to {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.4);
+    opacity: 0;
+  }
 }
 
 /* ===== وضع الوالدين ===== */

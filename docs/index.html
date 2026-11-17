@@ -13,7 +13,7 @@
   <main id="home" class="screen active">
     <header class="home-header">
       <h1 data-i18n="appTitle">ألعاب سلمان</h1>
-      <button id="lockBtn" class="lock-btn" type="button" aria-label="parent">
+      <button id="lockBtn" class="hold-btn" type="button" aria-label="parent">
         <svg class="ring" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20"/></svg>
         <span>🔒</span>
       </button>
@@ -21,12 +21,10 @@
 
     <div class="tiles">
       <button class="tile t-who" type="button" data-game="who">
-        <span class="badge" data-i18n="soon"></span>
         <span class="emoji">👨‍👩‍👦</span>
         <span class="label" data-i18n="game_who"></span>
       </button>
       <button class="tile t-peek" type="button" data-game="peek">
-        <span class="badge" data-i18n="soon"></span>
         <span class="emoji">🏠</span>
         <span class="label" data-i18n="game_peek"></span>
       </button>
@@ -37,6 +35,41 @@
       </button>
     </div>
   </main>
+
+  <!-- ===== لعبة: مين هذا؟ ===== -->
+  <section id="game-who" class="screen game">
+    <button class="hold-btn home-btn" type="button" aria-label="home">
+      <svg class="ring" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20"/></svg>
+      <span>🏠</span>
+    </button>
+    <div id="whoStage" class="who-stage">
+      <div id="whoCard" class="who-card"><img id="whoImg" alt=""></div>
+      <div id="whoName" class="who-name"></div>
+    </div>
+    <div id="whoEmpty" class="empty-game" hidden>
+      <span class="big">👨‍👩‍👦</span>
+      <p data-i18n="noPeople"></p>
+    </div>
+  </section>
+
+  <!-- ===== لعبة: الغميضة ===== -->
+  <section id="game-peek" class="screen game">
+    <button class="hold-btn home-btn" type="button" aria-label="home">
+      <svg class="ring" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20"/></svg>
+      <span>🏠</span>
+    </button>
+    <div id="peekHouse" class="house">
+      <div class="roof"></div>
+      <div class="walls">
+        <div id="peekWindows" class="windows"></div>
+        <div class="door"></div>
+      </div>
+    </div>
+    <div id="peekEmpty" class="empty-game" hidden>
+      <span class="big">🏠</span>
+      <p data-i18n="noPeople"></p>
+    </div>
+  </section>
 
   <!-- ===== وضع الوالدين ===== -->
   <section id="parent" class="screen">
@@ -110,6 +143,8 @@
   <script src="js/db.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/parent.js"></script>
+  <script src="js/games/who.js"></script>
+  <script src="js/games/peek.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

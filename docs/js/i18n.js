@@ -38,7 +38,9 @@ const I18N = (() => {
       needNamePhoto: 'أدخل الاسم وأضف صورة',
       confirmDelete: 'حذف «{name}»؟',
       noVoice: 'بدون صوت',
-      moveUp: 'تقديم'
+      moveUp: 'تقديم',
+      noPeople: 'أضف أفراد العائلة أولاً من وضع الوالدين 🔒',
+      holdToExit: 'اضغط مطولاً على 🏠 للخروج'
     },
     en: {
       appTitle: "Salman's Games",
@@ -77,7 +79,9 @@ const I18N = (() => {
       needNamePhoto: 'Enter a name and add a photo',
       confirmDelete: 'Delete "{name}"?',
       noVoice: 'No voice',
-      moveUp: 'Move up'
+      moveUp: 'Move up',
+      noPeople: 'Add family members first from parent mode 🔒',
+      holdToExit: 'Press and hold 🏠 to exit'
     }
   };
 

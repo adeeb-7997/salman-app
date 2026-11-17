@@ -11,34 +11,6 @@ const Parent = (() => {
   let listUrls = [];
   let previewUrl = null;
 
-  // ---------- قفل الوالدين: ضغطة مطولة 3 ثوانٍ ----------
-  function initGate() {
-    const btn = $('lockBtn');
-    let timer = null;
-
-    btn.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      try { btn.setPointerCapture(e.pointerId); } catch (_) {}
-      btn.classList.add('holding');
-      timer = setTimeout(() => {
-        timer = null;
-        btn.classList.remove('holding');
-        open();
-      }, 3000);
-    });
-
-    const cancel = () => {
-      btn.classList.remove('holding');
-      if (timer) {
-        clearTimeout(timer);
-        timer = null;
-        App.toast(t('holdToOpen'));
-      }
-    };
-    ['pointerup', 'pointercancel'].forEach(ev => btn.addEventListener(ev, cancel));
-    btn.addEventListener('contextmenu', e => e.preventDefault());
-  }
-
   function open() {
     App.show('parent');
     $('langSelect').value = I18N.lang;
@@ -46,7 +18,7 @@ const Parent = (() => {
   }
 
   function close() {
-    Sound.stop();
+    Sound.stopAll();
     App.show('home');
   }
 
@@ -144,7 +116,7 @@ const Parent = (() => {
 
   function closeDialog() {
     stopRecording(true);
-    Sound.stop();
+    Sound.stopAll();
     $('personDialog').classList.add('hidden');
     resetDialog();
   }
@@ -210,7 +182,7 @@ const Parent = (() => {
       App.toast(t('noRecorder'));
       return;
     }
-    Sound.stop();
+    Sound.stopAll();
 
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -272,7 +244,9 @@ const Parent = (() => {
   }
 
   function init() {
-    initGate();
+    // قفل الوالدين: ضغطة مطولة 3 ثوانٍ
+    App.hold($('lockBtn'), 3000, open, () => App.toast(t('holdToOpen')));
+
     $('closeParent').addEventListener('click', close);
     $('addBtn').addEventListener('click', openDialog);
     $('cancelPerson').addEventListener('click', closeDialog);
