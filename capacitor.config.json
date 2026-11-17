@@ -1,0 +1,8 @@
+{
+  "appId": "com.abusalman.games",
+  "appName": "ألعاب سلمان",
+  "webDir": "docs",
+  "android": {
+    "backgroundColor": "#FFF4D6"
+  }
+}

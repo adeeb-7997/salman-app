@@ -1,7 +1,8 @@
-// ===== التطبيق: التنقل بين الشاشات + الشاشة الرئيسية + أدوات مشتركة =====
+// ===== التطبيق: التنقل، الشاشة الرئيسية، مدة اللعب، أدوات مشتركة =====
 const App = (() => {
   let toastTimer = null;
   let currentGame = null;
+  let sessionStart = Date.now();
 
   // الألعاب المتاحة: اسم اللعبة ← وحدتها
   const GAMES = {
@@ -22,6 +23,11 @@ const App = (() => {
   function show(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
     window.scrollTo(0, 0);
+  }
+
+  function activeScreen() {
+    const s = document.querySelector('.screen.active');
+    return s ? s.id : '';
   }
 
   // زر بضغطة مطولة (للقفل وللخروج من الألعاب)
@@ -71,18 +77,68 @@ const App = (() => {
     }
   }
 
+  // ---------- الألعاب ----------
   function openGame(name) {
     const g = GAMES[name];
-    if (!g) return;
+    if (!g || activeScreen() !== 'home') return;
     currentGame = g;
     show(g.screen);
     g.module.start();
   }
 
-  function exitGame() {
+  function stopGame() {
     if (currentGame) currentGame.module.stop();
     currentGame = null;
+  }
+
+  function exitGame() {
+    stopGame();
     show('home');
+  }
+
+  // ---------- مدة اللعب ----------
+  function getSessionMinutes() {
+    try { return parseInt(localStorage.getItem('sessionMin') || '0', 10) || 0; } catch (e) { return 0; }
+  }
+
+  function setSessionMinutes(m) {
+    try { localStorage.setItem('sessionMin', String(m)); } catch (e) {}
+    resetSession();
+  }
+
+  function resetSession() {
+    sessionStart = Date.now();
+  }
+
+  async function goBye() {
+    stopGame();
+    Sound.stopAll();
+    show('bye');
+    let bye = null;
+    try {
+      const all = await DB.getAllSounds();
+      bye = all.find(s => s.key === 'bye');
+    } catch (e) {}
+    setTimeout(() => {
+      if (activeScreen() !== 'bye') return;
+      if (bye) Sound.playBlob(bye.blob);
+      else Sound.byeTune();
+    }, 600);
+  }
+
+  function checkSession() {
+    const m = getSessionMinutes();
+    if (!m || document.hidden) return;
+    const scr = activeScreen();
+    if (scr === 'parent' || scr === 'bye') return;
+    if (Date.now() - sessionStart >= m * 60000) goBye();
+  }
+
+  // ---------- زر الرجوع في أندرويد ----------
+  function handleBack() {
+    if (Parent.isDialogOpen()) { Parent.closeDialog(); return; }
+    if (activeScreen() === 'parent') { Parent.close(); return; }
+    // في الألعاب والرئيسية وباي باي: نتجاهل زر الرجوع حتى ما يطلع الطفل بالغلط
   }
 
   function initTiles() {
@@ -110,8 +166,19 @@ const App = (() => {
       hold(btn, 2000, exitGame, () => toast(I18N.t('holdToExit')));
     });
 
+    // فتح شاشة باي باي: ضغطة مطولة 3 ثوانٍ
+    hold(document.getElementById('byeLock'), 3000, () => {
+      Sound.stopAll();
+      resetSession();
+      show('home');
+    }, () => toast(I18N.t('holdToOpen')));
+
+    setInterval(checkSession, 5000);
+
     DB.requestPersist();
     Colors.load();
+
+    Native.init({ onBack: handleBack, onPause: () => Sound.stopAll() });
 
     // إيقاف الأصوات إذا خرج من التطبيق
     document.addEventListener('visibilitychange', () => {
@@ -124,7 +191,10 @@ const App = (() => {
     });
   }
 
-  return { toast, show, hold, burst, init };
+  return {
+    toast, show, hold, burst, init,
+    getSessionMinutes, setSessionMinutes, resetSession
+  };
 })();
 
 App.init();

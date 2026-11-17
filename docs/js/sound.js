@@ -83,6 +83,11 @@ const Sound = (() => {
     tone(f, f, 0, 0.3, 0.25, 'triangle');
   }
 
+  // لحن هادئ لشاشة باي باي
+  function byeTune() {
+    [784, 659, 587, 523, 392].forEach((f, i) => tone(f, f, i * 0.35, 0.5, 0.25, 'sine'));
+  }
+
   // احتفال: سلم موسيقي صاعد
   function cheer() {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, f, i * 0.09, 0.22, 0.3, 'triangle'));
@@ -191,5 +196,5 @@ const Sound = (() => {
     stopSpeak();
   }
 
-  return { boing, pop, balloonPop, whoosh, note, cheer, playBlob, speak, ttsInfo, stop, stopSpeak, stopAll };
+  return { boing, pop, balloonPop, whoosh, note, cheer, byeTune, playBlob, speak, ttsInfo, stop, stopSpeak, stopAll };
 })();

@@ -227,6 +227,21 @@ img { -webkit-user-drag: none; }
 }
 .paint-clear:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,.12); }
 
+/* ===== شاشة باي باي ===== */
+.bye.active {
+  background: linear-gradient(#1A237E, #3949AB);
+  align-items: center; justify-content: center; gap: 18px; color: #fff;
+  padding: 24px;
+}
+.bye-moon { font-size: 140px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 50% { transform: translateY(-14px) rotate(-6deg); } }
+.bye-text { font-size: 2rem; font-weight: 800; text-align: center; }
+.bye-stars { font-size: 34px; letter-spacing: 12px; opacity: .85; }
+.bye-lock {
+  position: absolute; bottom: max(24px, env(safe-area-inset-bottom));
+  background: rgba(255,255,255,.18);
+}
+
 /* ===== نجوم الاحتفال ===== */
 .burst {
   position: fixed; z-index: 40; font-size: 30px; pointer-events: none;

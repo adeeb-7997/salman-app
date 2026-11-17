@@ -51,7 +51,13 @@ const I18N = (() => {
       ttsSample: 'أحمر',
       ttsNo: '❌ المتصفح لا يدعم النطق الآلي',
       ttsNoLang: '⚠️ لا يوجد صوت عربي مثبّت في الجهاز ({n} أصوات متاحة)',
-      ttsOk: '✅ الصوت المستخدم: {name}'
+      ttsOk: '✅ الصوت المستخدم: {name}',
+      timerTitle: 'مدة اللعب',
+      timerOff: 'بدون حد',
+      m5: '5 دقائق', m10: '10 دقائق', m15: '15 دقيقة', m20: '20 دقيقة', m30: '30 دقيقة',
+      timerHint: 'بعد انتهاء المدة تظهر شاشة «باي باي»، وتُفتح بضغطة مطولة على القفل. تقدر تسجّل رسالة وداع بصوتك (حتى 6 ثوانٍ):',
+      byeMsg: 'رسالة الوداع',
+      byeText: 'باي باي يا سلمان 👋'
     },
     en: {
       appTitle: "Salman's Games",
@@ -103,7 +109,13 @@ const I18N = (() => {
       ttsSample: 'Red',
       ttsNo: '❌ This browser does not support speech',
       ttsNoLang: '⚠️ No English voice installed ({n} voices available)',
-      ttsOk: '✅ Voice in use: {name}'
+      ttsOk: '✅ Voice in use: {name}',
+      timerTitle: 'Play time',
+      timerOff: 'No limit',
+      m5: '5 minutes', m10: '10 minutes', m15: '15 minutes', m20: '20 minutes', m30: '30 minutes',
+      timerHint: 'When time is up a "Bye bye" screen appears; long-press the lock to unlock. You can record a goodbye message (up to 6 seconds):',
+      byeMsg: 'Goodbye message',
+      byeText: 'Bye bye Salman 👋'
     }
   };
 

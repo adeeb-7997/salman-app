@@ -1,24 +1,31 @@
-// ===== وضع الوالدين: القفل، قائمة العائلة، إضافة شخص، أصوات الألوان =====
+// ===== وضع الوالدين: القفل، العائلة، أصوات الألوان، مدة اللعب، الإعدادات =====
 const Parent = (() => {
   const $ = id => document.getElementById(id);
   const t = (k, v) => I18N.t(k, v);
+  const TIMER_OPTIONS = [0, 5, 10, 15, 20, 30];
 
   let photoBlob = null;
   let voiceBlob = null;
-  let recTarget = null;   // 'person' أو معرّف اللون الجاري تسجيله
+  let byeBlob = null;
+  let recTarget = null;   // 'person' أو معرّف اللون أو 'bye'
   let listUrls = [];
   let previewUrl = null;
 
-  function open() {
+  async function open() {
     App.show('parent');
     $('langSelect').value = I18N.lang;
+    renderTimer();
     renderList();
-    Colors.load().then(renderColors);
+    await Colors.load();
+    renderColors();
+    await loadBye();
+    renderBye();
   }
 
   function close() {
     if (Recorder.isRecording()) Recorder.stop(true);
     Sound.stopAll();
+    App.resetSession();
     App.show('home');
   }
 
@@ -93,78 +100,130 @@ const Parent = (() => {
     renderList();
   }
 
-  // ---------- أصوات الألوان ----------
-  function renderColors() {
-    const ul = $('colorList');
-    ul.innerHTML = '';
+  // ---------- صف تسجيل صوت (مشترك للألوان ورسالة الوداع) ----------
+  function soundRow({ id, left, label, recorded, onPlay, onDelete, onRecord }) {
+    const li = document.createElement('li');
+    li.className = 'person';
 
-    Colors.LIST.forEach(c => {
-      const li = document.createElement('li');
-      li.className = 'person';
+    const name = document.createElement('span');
+    name.className = 'pname';
+    name.textContent = label;
+    if (!recorded) {
+      const tag = document.createElement('div');
+      tag.className = 'tag';
+      tag.textContent = t('autoVoice');
+      name.appendChild(tag);
+    }
 
-      const sw = document.createElement('span');
-      sw.className = 'swatch';
-      sw.style.background = c.hex;
+    const actions = document.createElement('div');
+    actions.className = 'pactions';
+    const recording = recTarget === id;
+    actions.appendChild(iconBtn(recording ? '⏹️' : '🎙️', '', onRecord, recording ? 'rec-on' : ''));
+    actions.appendChild(iconBtn('▶️', t('play'), onPlay));
+    if (recorded) actions.appendChild(iconBtn('🗑️', t('resetVoice'), onDelete, 'danger'));
 
-      const name = document.createElement('span');
-      name.className = 'pname';
-      name.textContent = Colors.name(c);
-      if (!Colors.hasVoice(c.id)) {
-        const tag = document.createElement('div');
-        tag.className = 'tag';
-        tag.textContent = t('autoVoice');
-        name.appendChild(tag);
-      }
-
-      const actions = document.createElement('div');
-      actions.className = 'pactions';
-
-      const recording = recTarget === c.id;
-      actions.appendChild(iconBtn(recording ? '⏹️' : '🎙️', '', () => toggleColorRec(c.id),
-        recording ? 'rec-on' : ''));
-      actions.appendChild(iconBtn('▶️', t('play'), () => Colors.say(c)));
-
-      if (Colors.hasVoice(c.id)) {
-        actions.appendChild(iconBtn('🗑️', t('resetVoice'), async () => {
-          await DB.deleteSound('color:' + c.id);
-          Colors.setVoice(c.id, null);
-          renderColors();
-        }, 'danger'));
-      }
-
-      li.append(sw, name, actions);
-      ul.appendChild(li);
-    });
+    li.append(left, name, actions);
+    return li;
   }
 
-  async function toggleColorRec(id) {
+  // تسجيل صوت وحفظه بمفتاح معيّن
+  async function recordSound(id, key, maxMs, afterSave, rerender) {
     if (Recorder.isRecording()) {
       if (recTarget === id) Recorder.stop(false);
       else App.toast(t('stopFirst'));
       return;
     }
     recTarget = id;
-    renderColors();
+    rerender();
     const ok = await Recorder.start({
-      maxMs: 4000,
+      maxMs,
       onStop: async blob => {
         recTarget = null;
         if (blob) {
           try {
-            await DB.saveSound('color:' + id, blob);
-            Colors.setVoice(id, blob);
+            await DB.saveSound(key, blob);
+            afterSave(blob);
             Sound.playBlob(blob);
           } catch (e) {
             App.toast(t('saveError'));
           }
         }
-        renderColors();
+        rerender();
       }
     });
     if (!ok) {
       recTarget = null;
-      renderColors();
+      rerender();
     }
+  }
+
+  // ---------- أصوات الألوان ----------
+  function renderColors() {
+    const ul = $('colorList');
+    ul.innerHTML = '';
+    Colors.LIST.forEach(c => {
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = c.hex;
+      ul.appendChild(soundRow({
+        id: c.id,
+        left: sw,
+        label: Colors.name(c),
+        recorded: Colors.hasVoice(c.id),
+        onPlay: () => Colors.say(c),
+        onRecord: () => recordSound(c.id, 'color:' + c.id, 4000, blob => Colors.setVoice(c.id, blob), renderColors),
+        onDelete: async () => {
+          await DB.deleteSound('color:' + c.id);
+          Colors.setVoice(c.id, null);
+          renderColors();
+        }
+      }));
+    });
+  }
+
+  // ---------- مدة اللعب + رسالة الوداع ----------
+  function renderTimer() {
+    const sel = $('timerSelect');
+    sel.innerHTML = '';
+    TIMER_OPTIONS.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m;
+      o.textContent = m === 0 ? t('timerOff') : t('m' + m);
+      sel.appendChild(o);
+    });
+    sel.value = App.getSessionMinutes();
+  }
+
+  async function loadBye() {
+    try {
+      const all = await DB.getAllSounds();
+      const b = all.find(s => s.key === 'bye');
+      byeBlob = b ? b.blob : null;
+    } catch (e) {
+      byeBlob = null;
+    }
+  }
+
+  function renderBye() {
+    const ul = $('byeList');
+    ul.innerHTML = '';
+    const icon = document.createElement('span');
+    icon.className = 'swatch';
+    icon.style.cssText = 'background:#3949AB;display:flex;align-items:center;justify-content:center;font-size:24px';
+    icon.textContent = '🌙';
+    ul.appendChild(soundRow({
+      id: 'bye',
+      left: icon,
+      label: t('byeMsg'),
+      recorded: !!byeBlob,
+      onPlay: () => (byeBlob ? Sound.playBlob(byeBlob) : Sound.byeTune()),
+      onRecord: () => recordSound('bye', 'bye', 6000, blob => { byeBlob = blob; }, renderBye),
+      onDelete: async () => {
+        await DB.deleteSound('bye');
+        byeBlob = null;
+        renderBye();
+      }
+    }));
   }
 
   // ---------- نافذة إضافة شخص ----------
@@ -185,6 +244,10 @@ const Parent = (() => {
     $('playBtn').disabled = true;
     $('recStatus').textContent = '';
     setRecUi(false);
+  }
+
+  function isDialogOpen() {
+    return !$('personDialog').classList.contains('hidden');
   }
 
   function openDialog() {
@@ -237,6 +300,7 @@ const Parent = (() => {
   async function togglePersonRec() {
     if (Recorder.isRecording()) {
       if (recTarget === 'person') Recorder.stop(false);
+      else App.toast(t('stopFirst'));
       return;
     }
     recTarget = 'person';
@@ -307,12 +371,15 @@ const Parent = (() => {
     $('recBtn').addEventListener('click', togglePersonRec);
     $('playBtn').addEventListener('click', () => Sound.playBlob(voiceBlob));
     $('ttsTestBtn').addEventListener('click', testTts);
+    $('timerSelect').addEventListener('change', e => App.setSessionMinutes(parseInt(e.target.value, 10) || 0));
     $('langSelect').addEventListener('change', e => {
       I18N.setLang(e.target.value);
+      renderTimer();
       renderList();
       renderColors();
+      renderBye();
     });
   }
 
-  return { init, open, close };
+  return { init, open, close, isDialogOpen, closeDialog };
 })();
