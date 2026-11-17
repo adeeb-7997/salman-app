@@ -30,6 +30,29 @@ const Sound = (() => {
     o.stop(t + dur + 0.05);
   }
 
+  // ضجيج مُرشّح (للفرقعة والمسح)
+  function noise(dur, fFrom, fTo, vol = 0.5) {
+    const c = audioCtx();
+    if (!c) return;
+    const len = Math.floor(c.sampleRate * dur);
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const f = c.createBiquadFilter();
+    f.type = 'bandpass';
+    f.Q.value = 0.8;
+    const t = c.currentTime;
+    f.frequency.setValueAtTime(fFrom, t);
+    f.frequency.exponentialRampToValueAtTime(fTo, t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(c.destination);
+    src.start(t);
+  }
+
   // "بوينغ" عند لمس البطاقات
   function boing() {
     tone(300, 900, 0, 0.18, 0.4);
@@ -40,6 +63,24 @@ const Sound = (() => {
   function pop() {
     tone(200, 1200, 0, 0.12, 0.45, 'triangle');
     tone(1200, 700, 0.1, 0.15, 0.25, 'sine');
+  }
+
+  // فرقعة البالون
+  function balloonPop() {
+    noise(0.14, 3500, 700, 0.9);
+    tone(500, 150, 0, 0.12, 0.25);
+  }
+
+  // مسح اللوحة
+  function whoosh() {
+    noise(0.5, 300, 3500, 0.5);
+  }
+
+  // نغمة موسيقية حسب رقم اللون
+  function note(i) {
+    const scale = [523, 587, 659, 784, 880, 1047];
+    const f = scale[Math.abs(i) % scale.length];
+    tone(f, f, 0, 0.3, 0.25, 'triangle');
   }
 
   // احتفال: سلم موسيقي صاعد
@@ -78,7 +119,7 @@ const Sound = (() => {
     return audio;
   }
 
-  // نطق الاسم آلياً إذا ما فيه تسجيل
+  // نطق النص آلياً إذا ما فيه تسجيل
   function speak(text, onEnd) {
     stop();
     stopSpeak();
@@ -103,5 +144,5 @@ const Sound = (() => {
     stopSpeak();
   }
 
-  return { boing, pop, cheer, playBlob, speak, stop, stopSpeak, stopAll };
+  return { boing, pop, balloonPop, whoosh, note, cheer, playBlob, speak, stop, stopSpeak, stopAll };
 })();

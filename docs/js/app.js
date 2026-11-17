@@ -6,8 +6,9 @@ const App = (() => {
   // الألعاب المتاحة: اسم اللعبة ← وحدتها
   const GAMES = {
     who: { screen: 'game-who', module: WhoGame },
-    peek: { screen: 'game-peek', module: PeekGame }
-    // balloons: المرحلة 3
+    peek: { screen: 'game-peek', module: PeekGame },
+    balloons: { screen: 'game-balloons', module: BalloonsGame },
+    paint: { screen: 'game-paint', module: PaintGame }
   };
 
   function toast(msg) {
@@ -110,6 +111,7 @@ const App = (() => {
     });
 
     DB.requestPersist();
+    Colors.load();
 
     // إيقاف الأصوات إذا خرج من التطبيق
     document.addEventListener('visibilitychange', () => {

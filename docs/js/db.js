@@ -1,7 +1,8 @@
 // ===== التخزين المحلي (IndexedDB): الصور والأصوات تبقى داخل الجهاز =====
+// الإصدار 2: أضيف مخزن sounds لأصوات الألوان (البيانات القديمة تبقى كما هي)
 const DB = (() => {
   const NAME = 'salman-app';
-  const VERSION = 1;
+  const VERSION = 2;
   let dbPromise = null;
 
   function open() {
@@ -13,6 +14,9 @@ const DB = (() => {
         if (!db.objectStoreNames.contains('people')) {
           db.createObjectStore('people', { keyPath: 'id' });
         }
+        if (!db.objectStoreNames.contains('sounds')) {
+          db.createObjectStore('sounds', { keyPath: 'key' });
+        }
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
@@ -20,38 +24,50 @@ const DB = (() => {
     return dbPromise;
   }
 
-  async function getAllPeople() {
+  async function getAll(store) {
     const db = await open();
     return new Promise((resolve, reject) => {
-      const req = db.transaction('people', 'readonly').objectStore('people').getAll();
-      req.onsuccess = () => resolve(req.result.sort((a, b) => a.order - b.order));
+      const req = db.transaction(store, 'readonly').objectStore(store).getAll();
+      req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
   }
 
-  async function savePeople(list) {
+  async function putMany(store, list) {
     const db = await open();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction('people', 'readwrite');
-      const store = tx.objectStore('people');
-      list.forEach(p => store.put(p));
+      const tx = db.transaction(store, 'readwrite');
+      const s = tx.objectStore(store);
+      list.forEach(item => s.put(item));
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });
   }
 
-  function savePerson(p) { return savePeople([p]); }
-
-  async function deletePerson(id) {
+  async function remove(store, key) {
     const db = await open();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction('people', 'readwrite');
-      tx.objectStore('people').delete(id);
+      const tx = db.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(key);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
   }
+
+  // ---------- العائلة ----------
+  async function getAllPeople() {
+    const list = await getAll('people');
+    return list.sort((a, b) => a.order - b.order);
+  }
+  const savePeople = list => putMany('people', list);
+  const savePerson = p => putMany('people', [p]);
+  const deletePerson = id => remove('people', id);
+
+  // ---------- الأصوات (أسماء الألوان وغيرها) ----------
+  const getAllSounds = () => getAll('sounds');
+  const saveSound = (key, blob) => putMany('sounds', [{ key, blob }]);
+  const deleteSound = key => remove('sounds', key);
 
   // طلب تخزين دائم حتى لا يحذف المتصفح البيانات تلقائياً
   async function requestPersist() {
@@ -60,5 +76,9 @@ const DB = (() => {
     } catch (e) {}
   }
 
-  return { getAllPeople, savePerson, savePeople, deletePerson, requestPersist };
+  return {
+    getAllPeople, savePerson, savePeople, deletePerson,
+    getAllSounds, saveSound, deleteSound,
+    requestPersist
+  };
 })();

@@ -1,13 +1,11 @@
-// ===== وضع الوالدين: القفل، قائمة العائلة، إضافة شخص بصورة وصوت =====
+// ===== وضع الوالدين: القفل، قائمة العائلة، إضافة شخص، أصوات الألوان =====
 const Parent = (() => {
   const $ = id => document.getElementById(id);
   const t = (k, v) => I18N.t(k, v);
 
   let photoBlob = null;
   let voiceBlob = null;
-  let recorder = null;
-  let stream = null;
-  let recTimer = null;
+  let recTarget = null;   // 'person' أو معرّف اللون الجاري تسجيله
   let listUrls = [];
   let previewUrl = null;
 
@@ -15,11 +13,23 @@ const Parent = (() => {
     App.show('parent');
     $('langSelect').value = I18N.lang;
     renderList();
+    Colors.load().then(renderColors);
   }
 
   function close() {
+    if (Recorder.isRecording()) Recorder.stop(true);
     Sound.stopAll();
     App.show('home');
+  }
+
+  function iconBtn(icon, title, onClick, extra) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'icon-btn' + (extra ? ' ' + extra : '');
+    b.textContent = icon;
+    if (title) b.title = title;
+    b.addEventListener('click', onClick);
+    return b;
   }
 
   // ---------- قائمة العائلة ----------
@@ -73,16 +83,6 @@ const Parent = (() => {
     });
   }
 
-  function iconBtn(icon, title, onClick, extra) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'icon-btn' + (extra ? ' ' + extra : '');
-    b.textContent = icon;
-    if (title) b.title = title;
-    b.addEventListener('click', onClick);
-    return b;
-  }
-
   async function moveUp(people, i) {
     const a = people[i - 1], b = people[i];
     const tmp = a.order;
@@ -93,7 +93,86 @@ const Parent = (() => {
     renderList();
   }
 
-  // ---------- نافذة الإضافة ----------
+  // ---------- أصوات الألوان ----------
+  function renderColors() {
+    const ul = $('colorList');
+    ul.innerHTML = '';
+
+    Colors.LIST.forEach(c => {
+      const li = document.createElement('li');
+      li.className = 'person';
+
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = c.hex;
+
+      const name = document.createElement('span');
+      name.className = 'pname';
+      name.textContent = Colors.name(c);
+      if (!Colors.hasVoice(c.id)) {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.textContent = t('autoVoice');
+        name.appendChild(tag);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'pactions';
+
+      const recording = recTarget === c.id;
+      actions.appendChild(iconBtn(recording ? '⏹️' : '🎙️', '', () => toggleColorRec(c.id),
+        recording ? 'rec-on' : ''));
+      actions.appendChild(iconBtn('▶️', t('play'), () => Colors.say(c)));
+
+      if (Colors.hasVoice(c.id)) {
+        actions.appendChild(iconBtn('🗑️', t('resetVoice'), async () => {
+          await DB.deleteSound('color:' + c.id);
+          Colors.setVoice(c.id, null);
+          renderColors();
+        }, 'danger'));
+      }
+
+      li.append(sw, name, actions);
+      ul.appendChild(li);
+    });
+  }
+
+  async function toggleColorRec(id) {
+    if (Recorder.isRecording()) {
+      if (recTarget === id) Recorder.stop(false);
+      else App.toast(t('stopFirst'));
+      return;
+    }
+    recTarget = id;
+    renderColors();
+    const ok = await Recorder.start({
+      maxMs: 4000,
+      onStop: async blob => {
+        recTarget = null;
+        if (blob) {
+          try {
+            await DB.saveSound('color:' + id, blob);
+            Colors.setVoice(id, blob);
+            Sound.playBlob(blob);
+          } catch (e) {
+            App.toast(t('saveError'));
+          }
+        }
+        renderColors();
+      }
+    });
+    if (!ok) {
+      recTarget = null;
+      renderColors();
+    }
+  }
+
+  // ---------- نافذة إضافة شخص ----------
+  function setRecUi(on) {
+    $('recBtn').textContent = on ? t('stop') : t(voiceBlob ? 'reRecord' : 'record');
+    $('recBtn').classList.toggle('on', on);
+  }
+
   function resetDialog() {
     photoBlob = null;
     voiceBlob = null;
@@ -105,17 +184,17 @@ const Parent = (() => {
     $('pPhotoHint').hidden = false;
     $('playBtn').disabled = true;
     $('recStatus').textContent = '';
-    $('recBtn').textContent = t('record');
-    $('recBtn').classList.remove('on');
+    setRecUi(false);
   }
 
   function openDialog() {
+    if (Recorder.isRecording()) Recorder.stop(true);
     resetDialog();
     $('personDialog').classList.remove('hidden');
   }
 
   function closeDialog() {
-    stopRecording(true);
+    if (recTarget === 'person') Recorder.stop(true);
     Sound.stopAll();
     $('personDialog').classList.add('hidden');
     resetDialog();
@@ -155,74 +234,36 @@ const Parent = (() => {
     }
   }
 
-  // ---------- التسجيل الصوتي ----------
-  function stopStream() {
-    if (stream) {
-      stream.getTracks().forEach(tr => tr.stop());
-      stream = null;
-    }
-  }
-
-  function stopRecording(discard) {
-    clearTimeout(recTimer);
-    if (recorder && recorder.state === 'recording') {
-      recorder._discard = !!discard;
-      recorder.stop();
-    } else {
-      stopStream();
-    }
-  }
-
-  async function toggleRecording() {
-    if (recorder && recorder.state === 'recording') {
-      stopRecording(false);
+  async function togglePersonRec() {
+    if (Recorder.isRecording()) {
+      if (recTarget === 'person') Recorder.stop(false);
       return;
     }
-    if (!window.MediaRecorder || !navigator.mediaDevices) {
-      App.toast(t('noRecorder'));
-      return;
-    }
-    Sound.stopAll();
-
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (e) {
-      App.toast(t('micDenied'));
-      return;
-    }
-
-    const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']
-      .find(m => MediaRecorder.isTypeSupported(m));
-    const chunks = [];
-    const r = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-    recorder = r;
-
-    r.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-    r.onstop = () => {
-      stopStream();
-      if (!r._discard && chunks.length) {
-        voiceBlob = new Blob(chunks, { type: r.mimeType || mime || 'audio/webm' });
-        $('playBtn').disabled = false;
-        $('recStatus').textContent = t('recorded');
-        Sound.playBlob(voiceBlob);
+    recTarget = 'person';
+    const ok = await Recorder.start({
+      maxMs: 10000,
+      onStart: () => {
+        setRecUi(true);
+        $('recStatus').textContent = t('recording');
+      },
+      onStop: blob => {
+        recTarget = null;
+        if (blob) {
+          voiceBlob = blob;
+          $('playBtn').disabled = false;
+          $('recStatus').textContent = t('recorded');
+          Sound.playBlob(blob);
+        }
+        setRecUi(false);
       }
-      $('recBtn').textContent = t(voiceBlob ? 'reRecord' : 'record');
-      $('recBtn').classList.remove('on');
-      if (recorder === r) recorder = null;
-    };
-
-    r.start();
-    $('recBtn').textContent = t('stop');
-    $('recBtn').classList.add('on');
-    $('recStatus').textContent = t('recording');
-    recTimer = setTimeout(() => stopRecording(false), 10000);
+    });
+    if (!ok) recTarget = null;
   }
 
-  // ---------- الحفظ ----------
   async function save() {
     const name = $('pName').value.trim();
     if (!name || !photoBlob) { App.toast(t('needNamePhoto')); return; }
-    if (recorder && recorder.state === 'recording') { App.toast(t('stopFirst')); return; }
+    if (Recorder.isRecording()) { App.toast(t('stopFirst')); return; }
 
     try {
       const people = await DB.getAllPeople();
@@ -252,11 +293,12 @@ const Parent = (() => {
     $('cancelPerson').addEventListener('click', closeDialog);
     $('savePerson').addEventListener('click', save);
     $('pPhoto').addEventListener('change', onPhotoChange);
-    $('recBtn').addEventListener('click', toggleRecording);
+    $('recBtn').addEventListener('click', togglePersonRec);
     $('playBtn').addEventListener('click', () => Sound.playBlob(voiceBlob));
     $('langSelect').addEventListener('change', e => {
       I18N.setLang(e.target.value);
       renderList();
+      renderColors();
     });
   }
 

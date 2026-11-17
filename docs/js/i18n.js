@@ -40,7 +40,12 @@ const I18N = (() => {
       noVoice: 'بدون صوت',
       moveUp: 'تقديم',
       noPeople: 'أضف أفراد العائلة أولاً من وضع الوالدين 🔒',
-      holdToExit: 'اضغط مطولاً على 🏠 للخروج'
+      holdToExit: 'اضغط مطولاً على 🏠 للخروج',
+      game_paint: 'الرسم',
+      colorsTitle: 'أصوات الألوان',
+      colorsHint: 'سجّل اسم كل لون بصوتك (حتى 4 ثوانٍ). إذا ما سجّلت، الجوال ينطقه آلياً.',
+      autoVoice: 'صوت آلي',
+      resetVoice: 'رجوع للصوت الآلي'
     },
     en: {
       appTitle: "Salman's Games",
@@ -81,7 +86,12 @@ const I18N = (() => {
       noVoice: 'No voice',
       moveUp: 'Move up',
       noPeople: 'Add family members first from parent mode 🔒',
-      holdToExit: 'Press and hold 🏠 to exit'
+      holdToExit: 'Press and hold 🏠 to exit',
+      game_paint: 'Paint',
+      colorsTitle: 'Color voices',
+      colorsHint: 'Record each color name in your voice (up to 4 seconds). Otherwise the phone says it automatically.',
+      autoVoice: 'Auto voice',
+      resetVoice: 'Back to auto voice'
     }
   };
 
