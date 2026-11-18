@@ -57,7 +57,16 @@ const I18N = (() => {
       m5: '5 دقائق', m10: '10 دقائق', m15: '15 دقيقة', m20: '20 دقيقة', m30: '30 دقيقة',
       timerHint: 'بعد انتهاء المدة تظهر شاشة «باي باي»، وتُفتح بضغطة مطولة على القفل. تقدر تسجّل رسالة وداع بصوتك (حتى 6 ثوانٍ):',
       byeMsg: 'رسالة الوداع',
-      byeText: 'باي باي يا سلمان 👋'
+      byeText: 'باي باي يا سلمان 👋',
+      game_where: 'وين ماما؟',
+      whereTitle: 'أسئلة «وين ماما؟»',
+      whereHint: 'سجّل لكل شخص سؤالاً مثل: «وين ماما؟» (حتى 4 ثوانٍ). اللي ما له سؤال يظهر كخيار فقط.',
+      whereLabel: 'وين {name}؟',
+      whereLevel: 'عدد الصور',
+      levelAuto: 'تلقائي (يكبر مع سلمان)',
+      level2: 'صورتين', level3: '3 صور', level4: '4 صور',
+      notRecorded: 'غير مسجّل',
+      whereEmpty: 'تحتاج شخصين على الأقل، وسؤال «وين؟» مسجّل لشخص واحد على الأقل (من وضع الوالدين 🔒)'
     },
     en: {
       appTitle: "Salman's Games",
@@ -115,7 +124,16 @@ const I18N = (() => {
       m5: '5 minutes', m10: '10 minutes', m15: '15 minutes', m20: '20 minutes', m30: '30 minutes',
       timerHint: 'When time is up a "Bye bye" screen appears; long-press the lock to unlock. You can record a goodbye message (up to 6 seconds):',
       byeMsg: 'Goodbye message',
-      byeText: 'Bye bye Salman 👋'
+      byeText: 'Bye bye Salman 👋',
+      game_where: 'Where is Mom?',
+      whereTitle: '"Where is…?" questions',
+      whereHint: 'Record a question for each person, e.g. "Where is Mom?" (up to 4 seconds). People without a question only appear as choices.',
+      whereLabel: 'Where is {name}?',
+      whereLevel: 'Number of photos',
+      levelAuto: 'Automatic (grows with Salman)',
+      level2: '2 photos', level3: '3 photos', level4: '4 photos',
+      notRecorded: 'Not recorded',
+      whereEmpty: 'You need at least two people and a recorded "Where is…?" question for at least one (from parent mode 🔒)'
     }
   };
 

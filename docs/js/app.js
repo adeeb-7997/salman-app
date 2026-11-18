@@ -7,6 +7,7 @@ const App = (() => {
   // الألعاب المتاحة: اسم اللعبة ← وحدتها
   const GAMES = {
     who: { screen: 'game-who', module: WhoGame },
+    where: { screen: 'game-where', module: WhereGame },
     peek: { screen: 'game-peek', module: PeekGame },
     balloons: { screen: 'game-balloons', module: BalloonsGame },
     paint: { screen: 'game-paint', module: PaintGame }

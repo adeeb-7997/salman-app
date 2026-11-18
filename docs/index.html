@@ -24,6 +24,10 @@
         <span class="emoji">👨‍👩‍👦</span>
         <span class="label" data-i18n="game_who"></span>
       </button>
+      <button class="tile t-where" type="button" data-game="where">
+        <span class="emoji">🔍</span>
+        <span class="label" data-i18n="game_where"></span>
+      </button>
       <button class="tile t-peek" type="button" data-game="peek">
         <span class="emoji">🏠</span>
         <span class="label" data-i18n="game_peek"></span>
@@ -52,6 +56,20 @@
     <div id="whoEmpty" class="empty-game" hidden>
       <span class="big">👨‍👩‍👦</span>
       <p data-i18n="noPeople"></p>
+    </div>
+  </section>
+
+  <!-- ===== لعبة: وين ماما؟ ===== -->
+  <section id="game-where" class="screen game">
+    <button class="hold-btn home-btn" type="button" aria-label="home">
+      <svg class="ring" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20"/></svg>
+      <span>🏠</span>
+    </button>
+    <button id="whereReplay" class="replay-btn" type="button" aria-label="replay">👂</button>
+    <div id="whereGrid" class="where-grid"></div>
+    <div id="whereEmpty" class="empty-game" hidden>
+      <span class="big">🔍</span>
+      <p data-i18n="whereEmpty"></p>
     </div>
   </section>
 
@@ -122,6 +140,16 @@
         </div>
         <ul id="peopleList" class="people"></ul>
         <p id="emptyMsg" class="muted" data-i18n="empty"></p>
+      </div>
+
+      <div class="card">
+        <h3 data-i18n="whereTitle"></h3>
+        <p class="muted small" data-i18n="whereHint"></p>
+        <label class="field">
+          <span data-i18n="whereLevel"></span>
+          <select id="whereLevelSelect"></select>
+        </label>
+        <ul id="questionList" class="people"></ul>
       </div>
 
       <div class="card">
@@ -201,6 +229,7 @@
   <script src="js/colors.js"></script>
   <script src="js/parent.js"></script>
   <script src="js/games/who.js"></script>
+  <script src="js/games/where.js"></script>
   <script src="js/games/peek.js"></script>
   <script src="js/games/balloons.js"></script>
   <script src="js/games/paint.js"></script>

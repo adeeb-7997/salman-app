@@ -9,13 +9,18 @@ const Parent = (() => {
   let byeBlob = null;
   let recTarget = null;   // 'person' أو معرّف اللون أو 'bye'
   let listUrls = [];
+  let qUrls = [];
+  let questions = {};     // personId ← تسجيل سؤال «وين؟»
   let previewUrl = null;
 
   async function open() {
     App.show('parent');
     $('langSelect').value = I18N.lang;
     renderTimer();
+    renderWhereLevel();
     renderList();
+    await loadQuestions();
+    renderQuestions();
     await Colors.load();
     renderColors();
     await loadBye();
@@ -82,7 +87,10 @@ const Parent = (() => {
       actions.appendChild(iconBtn('🗑️', '', async () => {
         if (!confirm(t('confirmDelete', { name: p.name }))) return;
         await DB.deletePerson(p.id);
+        await DB.deleteSound('q:' + p.id);
+        delete questions[p.id];
         renderList();
+        renderQuestions();
       }, 'danger'));
 
       li.append(img, name, actions);
@@ -98,10 +106,11 @@ const Parent = (() => {
     if (a.order === b.order) b.order = a.order - 1;
     await DB.savePeople([a, b]);
     renderList();
+    renderQuestions();
   }
 
   // ---------- صف تسجيل صوت (مشترك للألوان ورسالة الوداع) ----------
-  function soundRow({ id, left, label, recorded, onPlay, onDelete, onRecord }) {
+  function soundRow({ id, left, label, recorded, onPlay, onDelete, onRecord, emptyTag }) {
     const li = document.createElement('li');
     li.className = 'person';
 
@@ -111,7 +120,7 @@ const Parent = (() => {
     if (!recorded) {
       const tag = document.createElement('div');
       tag.className = 'tag';
-      tag.textContent = t('autoVoice');
+      tag.textContent = emptyTag || t('autoVoice');
       name.appendChild(tag);
     }
 
@@ -155,6 +164,62 @@ const Parent = (() => {
       recTarget = null;
       rerender();
     }
+  }
+
+  // ---------- أسئلة «وين ماما؟» ----------
+  async function loadQuestions() {
+    questions = {};
+    try {
+      const all = await DB.getAllSounds();
+      all.forEach(s => { if (s.key.startsWith('q:')) questions[s.key.slice(2)] = s.blob; });
+    } catch (e) {}
+  }
+
+  async function renderQuestions() {
+    qUrls.forEach(u => URL.revokeObjectURL(u));
+    qUrls = [];
+    const people = await DB.getAllPeople();
+    const ul = $('questionList');
+    ul.innerHTML = '';
+
+    people.forEach(p => {
+      const img = document.createElement('img');
+      img.className = 'thumb';
+      const url = URL.createObjectURL(p.photo);
+      qUrls.push(url);
+      img.src = url;
+      img.alt = '';
+
+      const qid = 'q:' + p.id;
+      ul.appendChild(soundRow({
+        id: qid,
+        left: img,
+        label: t('whereLabel', { name: p.name }),
+        recorded: !!questions[p.id],
+        emptyTag: t('notRecorded'),
+        onPlay: () => (questions[p.id] ? Sound.playBlob(questions[p.id]) : App.toast(t('notRecorded'))),
+        onRecord: () => recordSound(qid, qid, 4000, blob => { questions[p.id] = blob; }, renderQuestions),
+        onDelete: async () => {
+          await DB.deleteSound(qid);
+          delete questions[p.id];
+          renderQuestions();
+        }
+      }));
+    });
+  }
+
+  function renderWhereLevel() {
+    const sel = $('whereLevelSelect');
+    sel.innerHTML = '';
+    [['auto', 'levelAuto'], ['2', 'level2'], ['3', 'level3'], ['4', 'level4']].forEach(([v, k]) => {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = t(k);
+      sel.appendChild(o);
+    });
+    let mode = 'auto';
+    try { mode = localStorage.getItem('whereMode') || 'auto'; } catch (e) {}
+    sel.value = mode;
   }
 
   // ---------- أصوات الألوان ----------
@@ -343,6 +408,7 @@ const Parent = (() => {
       closeDialog();
       App.toast(t('saved'));
       renderList();
+      renderQuestions();
     } catch (e) {
       App.toast(t('saveError'));
     }
@@ -371,11 +437,16 @@ const Parent = (() => {
     $('recBtn').addEventListener('click', togglePersonRec);
     $('playBtn').addEventListener('click', () => Sound.playBlob(voiceBlob));
     $('ttsTestBtn').addEventListener('click', testTts);
+    $('whereLevelSelect').addEventListener('change', e => {
+      try { localStorage.setItem('whereMode', e.target.value); } catch (err) {}
+    });
     $('timerSelect').addEventListener('change', e => App.setSessionMinutes(parseInt(e.target.value, 10) || 0));
     $('langSelect').addEventListener('change', e => {
       I18N.setLang(e.target.value);
       renderTimer();
+      renderWhereLevel();
       renderList();
+      renderQuestions();
       renderColors();
       renderBye();
     });
